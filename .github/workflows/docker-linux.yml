@@ -31,6 +31,7 @@ jobs:
               && rm -rf /var/lib/apt/lists/*
 
           WORKDIR /opt
+          # Naprawiono niekompletny adres URL klonowania repozytorium:
           RUN git clone --depth=1 https://github.com vk-gl-cts
 
           WORKDIR /opt/vk-gl-cts
