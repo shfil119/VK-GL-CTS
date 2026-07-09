@@ -1,4 +1,4 @@
-name: Linux VK-GL-CTS
+name: Linux
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-    
+      
     # Define the execution matrix for 64-bit and 32-bit targets
     strategy:
       fail-fast: false
@@ -24,14 +24,16 @@ jobs:
             output_dir: "build-output-64bit"
             tarball_name: "vk-gl-cts-linux-x86_64.tar.gz"
             setup_cmd: "echo 'Building for 64-bit...'"
-            cmake_flags: ""
+            # FIX: Force strict base x86-64 and explicitly turn off AVX/AVX512 features in CMake submodules
+            cmake_flags: "-DCMAKE_C_FLAGS='-march=x86-64' -DCMAKE_CXX_FLAGS='-march=x86-64' -DENABLE_AVX=OFF -DENABLE_AVX2=OFF -DENABLE_AVX512=OFF"
             packages: "libpng-dev libz-dev libx11-dev libxcb1-dev libxrender-dev libvulkan-dev"
 
           - arch: "i686"
             output_dir: "build-output-32bit"
             tarball_name: "vk-gl-cts-linux-i686.tar.gz"
             setup_cmd: "dpkg --add-architecture i386 && apt-get update"
-            cmake_flags: "-DCMAKE_C_FLAGS='-m32' -DCMAKE_CXX_FLAGS='-m32'"
+            # FIX: Force base 32-bit i686, explicitly disable compilation of SSE/AVX vectors
+            cmake_flags: "-DCMAKE_C_FLAGS='-m32 -march=i686 -mno-sse -mno-sse2' -DCMAKE_CXX_FLAGS='-m32 -march=i686 -mno-sse -mno-sse2' -DENABLE_AVX=OFF -DENABLE_AVX2=OFF -DENABLE_AVX512=OFF"
             packages: "gcc-multilib g++-multilib libpng-dev:i386 libz-dev:i386 libx11-dev:i386 libxcb1-dev:i386 libxrender-dev:i386 libvulkan-dev:i386"
 
     steps:
@@ -75,18 +77,21 @@ jobs:
               cp -r external/openglcts/modules/glcts /work/${{ matrix.output_dir }}/
             "
 
-      - name: Pack and Compress
+      - name: Fix Permissions, Pack and Compress
         run: |
+          # Fix file permissions (processes inside the container run as root)
+          sudo chown -R $USER:$USER ${{ github.workspace }}/${{ matrix.output_dir }}
+          
           cd ${{ matrix.output_dir }}
           tar -czf ../${{ matrix.tarball_name }} .
           cd ..
 
       - name: Upload Packaged Binaries to GitHub Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.tarball_name }}
           path: ${{ matrix.tarball_name }}
-          compression-level: 0 # FIX: Prevents GitHub from wrapping the .tar.gz file inside a secondary ZIP file
+          archive: false # FIX: Prevents GitHub from wrapping the .tar.gz file inside a secondary ZIP file
 
       - name: Upload Binaries directly to GitHub Release
         # This step runs ONLY if the workflow was triggered by a Release event
