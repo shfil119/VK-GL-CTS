@@ -15,56 +15,43 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create Inline Dockerfile
+      - name: Build CTS inside Ubuntu Container via Docker Run
         run: |
-          cat << 'EOF' > Dockerfile
-          # ==========================================
-          # Stage 1: Build Environment & Compilation
-          # ==========================================
-          FROM ubuntu:22.04 AS builder
-          ENV DEBIAN_FRONTEND=noninteractive
+          # Tworzymy katalog na pliki wynikowe na hoście
+          mkdir -p ${{ github.workspace }}/build-output
 
-          RUN apt-get update && apt-get install -y --no-install-recommends \
-              build-essential cmake ninja-build git python3 python3-pip \
-              libpng-dev libz-dev libx11-dev libxcb1-dev libxrender-dev \
-              libvulkan-dev ca-certificates \
-              && rm -rf /var/lib/apt/lists/*
-
-          WORKDIR /opt
-          # Naprawiono niekompletny adres URL klonowania repozytorium:
-          RUN git clone --depth=1 https://github.com vk-gl-cts
-
-          WORKDIR /opt/vk-gl-cts
-          RUN python3 external/fetch_sources.py
-
-          RUN mkdir build && cd build && \
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            ubuntu:22.04 \
+            /bin/bash -c "
+              set -e
+              
+              # 1. Aktualizacja pakietów i instalacja zależności
+              apt-get update && apt-get install -y --no-install-recommends \
+                build-essential cmake ninja-build git python3 python3-pip \
+                libpng-dev libz-dev libx11-dev libxcb1-dev libxrender-dev \
+                libvulkan-dev ca-certificates
+              
+              # 3. Pobieranie zewnętrznych źródeł skryptem Khronos
+              python3 external/fetch_sources.py
+              
+              # 4. Konfiguracja i kompilacja
+              mkdir build && cd build
               cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DDEQP_TARGET=null \
-              -DSELECTED_BUILD_TARGETS="deqp-vk;deqp-gles2;deqp-gles3;glcts" && \
+                -DSELECTED_BUILD_TARGETS='deqp-vk;deqp-gles2;deqp-gles3;glcts'
               ninja
+              
+              # 5. Kopiowanie gotowych binariów do zmapowanego wolumenu hosta
+              cp -r external/vulkancts/modules/vulkan/deqp-vk /work/build-output/
+              cp -r external/openglcts/modules/glcts /work/build-output/
+            "
 
-          # ==========================================
-          # Stage 2: Extraction Step
-          # ==========================================
-          FROM scratch AS exporter
-          COPY --from=builder /opt/vk-gl-cts/build/external/vulkancts/modules/vulkan/deqp-vk /
-          COPY --from=builder /opt/vk-gl-cts/build/external/openglcts/modules/glcts /
-          EOF
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build CTS inside Docker container
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          tags: vk-gl-cts-builder:latest
-          outputs: type=local,dest=./build-output
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Create Tarball Artifact
+      - name: Fix Permissions, Pack and Compress
         run: |
+          # Zmiana uprawnień plików (proces wewnątrz kontenera działa jako root)
+          sudo chown -R $USER:$USER ${{ github.workspace }}/build-output
+          
           cd build-output
           tar -czf ../vk-gl-cts-linux-x86_64.tar.gz .
           cd ..
