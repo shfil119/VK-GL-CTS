@@ -25,14 +25,14 @@ jobs:
             tarball_name: "vk-gl-cts-linux-x86_64.tar.gz"
             setup_cmd: "echo 'Building for 64-bit...'"
             cmake_flags: "-DCMAKE_C_FLAGS='-march=x86-64' -DCMAKE_CXX_FLAGS='-march=x86-64'"
-            packages: "libpng-dev libz-dev libx11-dev libxcb1-dev libxrender-dev libvulkan-dev"
+            packages: "pkg-config libpng-dev libz-dev libx11-dev libxcb1-dev libxrender-dev libvulkan-dev"
 
           - arch: "i686"
             output_dir: "build-output-32bit"
             tarball_name: "vk-gl-cts-linux-i686.tar.gz"
             setup_cmd: "dpkg --add-architecture i386 && apt-get update"
             cmake_flags: "-DCMAKE_C_FLAGS='-m32 -march=i686' -DCMAKE_CXX_FLAGS='-m32 -march=i686'"
-            packages: "gcc-multilib g++-multilib libpng-dev:i386 libz-dev:i386 libx11-dev:i386 libxcb1-dev:i386 libxrender-dev:i386 libvulkan-dev:i386"
+            packages: "gcc-multilib g++-multilib pkg-config:i386 libpng-dev:i386 libz-dev:i386 libx11-dev:i386 libxcb1-dev:i386 libxrender-dev:i386 libvulkan-dev:i386"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
