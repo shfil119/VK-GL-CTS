@@ -72,6 +72,11 @@ jobs:
               # 5. Copy the compiled binaries to the mapped host volume
               cp -r external/vulkancts/modules/vulkan/deqp-vk /work/${{ matrix.output_dir }}/
               cp -r external/openglcts/modules/glcts /work/${{ matrix.output_dir }}/
+
+              # 6. Copy assets for glcts
+              cp -r modules/gles2/gles2 /work/${{ matrix.output_dir }}/
+              cp -r modules/gles3/gles3 /work/${{ matrix.output_dir }}/
+              cp -r modules/gles31/gles31 /work/${{ matrix.output_dir }}/
             "
 
       - name: Fix Permissions, Pack and Compress
