@@ -64,7 +64,7 @@ jobs:
               mkdir build && cd build
               cmake .. -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DDEQP_TARGET=default \
+                -DDEQP_TARGET=surfaceless \
                 -DSELECTED_BUILD_TARGETS='deqp-vk;deqp-gles2;deqp-gles3;glcts' \
                 ${{ matrix.cmake_flags }}
               ninja
