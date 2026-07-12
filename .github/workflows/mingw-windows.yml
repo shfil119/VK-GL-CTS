@@ -17,19 +17,18 @@ jobs:
     - name: Install System Prerequisites
       run: |
         apt-get update
-        apt-get install -y git
+        apt-get install -y git python3
 
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Checkout submodules
+    - name: Fetch External Sources (VK-GL-CTS Dependencies)
       run: |
-        git config --global --add safe.directory '*'
-        git submodule update --init --recursive
+        python3 external/fetch_sources.py
 
     - name: Install MinGW and Build Tools inside Container
       run: |
-        apt-get install -y mingw-w64 ninja-build cmake python3
+        apt-get install -y mingw-w64 ninja-build cmake
 
     - name: Setup MinGW Toolchain File
       run: |
