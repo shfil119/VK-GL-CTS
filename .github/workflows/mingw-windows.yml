@@ -1,0 +1,78 @@
+name: Windows MinGW Build via Docker
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-mingw-docker:
+    runs-on: ubuntu-latest
+    
+    container:
+      image: ubuntu:22.04
+
+    steps:
+    - name: Install System Prerequisites
+      run: |
+        apt-get update
+        apt-get install -y git python3
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Fetch External Sources (VK-GL-CTS Dependencies)
+      run: |
+        python3 external/fetch_sources.py
+
+    - name: Install MinGW (POSIX threads) and Build Tools
+      run: |
+        apt-get install -y mingw-w64 mingw-w64-tools ninja-build cmake
+        # Wymuszenie wersji POSIX dla kompilatorów MinGW w Ubuntu
+        update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+        update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+    - name: Setup MinGW Toolchain File
+      run: |
+        cat << 'EOF' > toolchain-mingw64.cmake
+        set(CMAKE_SYSTEM_NAME Windows)
+        set(CMAKE_SYSTEM_PROCESSOR x86_64)
+        
+        # Definicja kompilatorów
+        set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc-posix)
+        set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++-posix)
+        set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+        
+        # Wymuszenie rozszerzeń plików dla Windows (zapobiega błędom COPY_FILE w try_compile)
+        set(CMAKE_EXECUTABLE_SUFFIX ".exe")
+        set(CMAKE_IMPORT_LIBRARY_SUFFIX ".lib")
+        set(CMAKE_SHARED_LIBRARY_SUFFIX ".dll")
+        set(CMAKE_STATIC_LIBRARY_SUFFIX ".a")
+
+        # Ścieżki przeszukiwania bibliotek
+        set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
+        set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+        set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+        set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+        EOF
+
+    - name: Configure Build
+      run: |
+        cmake -B build \
+          -G Ninja \
+          -DCMAKE_TOOLCHAIN_FILE=toolchain-mingw64.cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DDE_MINGW=ON
+
+    - name: Compile Project
+      run: |
+        cmake --build build --parallel $(nproc)
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: vk-gl-cts-mingw-docker-windows
+        path: |
+          build/**/*.exe
+          build/**/*.dll
