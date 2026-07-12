@@ -1,0 +1,58 @@
+name: Windows MinGW Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-mingw:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Checkout submodules
+      run: |
+        git submodule update --init --recursive
+
+    - name: Install MinGW and Build Tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64 ninja-build cmake python3
+
+    - name: Setup MinGW Toolchain File
+      run: |
+        cat << 'EOF' > toolchain-mingw64.cmake
+        set(CMAKE_SYSTEM_NAME Windows)
+        set(CMAKE_SYSTEM_PROCESSOR x86_64)
+        set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+        set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+        set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+        set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
+        set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+        set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+        set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+        EOF
+
+    - name: Configure Build
+      run: |
+        cmake -B build \
+          -G Ninja \
+          -DCMAKE_TOOLCHAIN_FILE=toolchain-mingw64.cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DDE_MINGW=ON
+
+    - name: Compile Project
+      run: |
+        cmake --build build --parallel $(nproc)
+
+    - name: Upload Build Artifacts
+      uses: actions/artifacts@v4
+      with:
+        name: vk-gl-cts-mingw-windows
+        path: |
+          build/**/*.exe
+          build/**/*.dll
