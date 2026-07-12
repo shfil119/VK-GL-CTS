@@ -1,4 +1,4 @@
-name: Windows MinGW Build
+name: Windows MinGW Build via Docker
 
 on:
   push:
@@ -7,21 +7,29 @@ on:
     branches: [ main, master ]
 
 jobs:
-  build-mingw:
-    runs-on: ubuntu-22.04
+  build-mingw-docker:
+    runs-on: ubuntu-latest
+    
+    container:
+      image: ubuntu:22.04
 
     steps:
+    - name: Install System Prerequisites
+      run: |
+        apt-get update
+        apt-get install -y git
+
     - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Checkout submodules
       run: |
+        git config --global --add safe.directory '*'
         git submodule update --init --recursive
 
-    - name: Install MinGW and Build Tools
+    - name: Install MinGW and Build Tools inside Container
       run: |
-        sudo apt-get update
-        sudo apt-get install -y mingw-w64 ninja-build cmake python3
+        apt-get install -y mingw-w64 ninja-build cmake python3
 
     - name: Setup MinGW Toolchain File
       run: |
@@ -50,9 +58,9 @@ jobs:
         cmake --build build --parallel $(nproc)
 
     - name: Upload Build Artifacts
-      uses: actions/artifacts@v4
+      uses: actions/upload-artifact@v4
       with:
-        name: vk-gl-cts-mingw-windows
+        name: vk-gl-cts-mingw-docker-windows
         path: |
           build/**/*.exe
           build/**/*.dll
