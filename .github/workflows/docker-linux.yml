@@ -45,7 +45,7 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}:/work" \
             -w /work \
-            ubuntu:22.04 \
+            ubuntu:24.04 \
             /bin/bash -c "
               set -e
               
@@ -65,12 +65,13 @@ jobs:
               cmake .. -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DDEQP_TARGET=surfaceless \
-                -DSELECTED_BUILD_TARGETS='deqp-vk;deqp-gles2;deqp-gles3;glcts' \
+                -DSELECTED_BUILD_TARGETS='deqp-vk;deqp-vksc;glcts' \
                 ${{ matrix.cmake_flags }}
               ninja
               
               # 5. Copy the compiled binaries to the mapped host volume
               cp -r external/vulkancts/modules/vulkan/deqp-vk /work/${{ matrix.output_dir }}/
+              cp -r external/vulkancts/modules/vulkan/deqp-vksc /work/${{ matrix.output_dir }}/
               cp -r external/openglcts/modules/glcts /work/${{ matrix.output_dir }}/
 
               # 6. Copy assets for glcts
