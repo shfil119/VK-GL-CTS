@@ -26,6 +26,7 @@ jobs:
             setup_cmd: "echo 'Building for 64-bit...'"
             cmake_flags: "-DCMAKE_C_FLAGS='-march=x86-64' -DCMAKE_CXX_FLAGS='-march=x86-64'"
             packages: "pkg-config libpng-dev libz-dev libx11-dev libgl1-mesa-dev libglx-dev libegl-dev libegl1-mesa-dev libgles2-mesa-dev libxcb1-dev libxrender-dev libvulkan-dev"
+            pkg_config: "" # Use default
 
           - arch: "i686"
             output_dir: "build-output-32bit"
@@ -33,6 +34,7 @@ jobs:
             setup_cmd: "dpkg --add-architecture i386 && apt-get update"
             cmake_flags: "-DCMAKE_C_FLAGS='-m32 -march=i686' -DCMAKE_CXX_FLAGS='-m32 -march=i686'"
             packages: "gcc-multilib g++-multilib pkg-config:i386 libpng-dev:i386 libz-dev:i386 libx11-dev:i386 libgl1-mesa-dev:i386 libglx-dev:i386 libegl-dev:i386 libegl1-mesa-dev:i386 libgles2-mesa-dev:i386 libxcb1-dev:i386 libxrender-dev:i386 libvulkan-dev:i386"
+            pkg_config: "PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -62,6 +64,8 @@ jobs:
               
               # 4. Configure and compile the project using appropriate flags
               mkdir build && cd build
+
+              ${{ pkg_config }} \
               cmake .. -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DDEQP_TARGET=surfaceless \
