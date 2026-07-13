@@ -79,9 +79,11 @@ jobs:
               cp -r external/openglcts/modules/glcts /work/${{ matrix.output_dir }}/
 
               # 6. Copy assets for glcts
-              cp -r modules/gles2/gles2 /work/${{ matrix.output_dir }}/
-              cp -r modules/gles3/gles3 /work/${{ matrix.output_dir }}/
-              cp -r modules/gles31/gles31 /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/gl_cts /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/gles2 /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/gles3 /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/gles31 /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/vulkan /work/${{ matrix.output_dir }}/
             "
 
       - name: Fix Permissions, Pack and Compress
@@ -89,9 +91,7 @@ jobs:
           # Fix file permissions (processes inside the container run as root)
           sudo chown -R $USER:$USER ${{ github.workspace }}/${{ matrix.output_dir }}
           
-          cd ${{ matrix.output_dir }}
-          tar -czf ../${{ matrix.tarball_name }} .
-          cd ..
+          tar -czf ${{ matrix.tarball_name }} ${{ matrix.output_dir }}
 
       - name: Upload Packaged Binaries to GitHub Artifacts
         uses: actions/upload-artifact@v7
