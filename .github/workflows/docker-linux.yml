@@ -65,7 +65,7 @@ jobs:
               # 4. Configure and compile the project using appropriate flags
               mkdir build && cd build
 
-              ${{ pkg_config }} \
+              ${{ matrix.pkg_config }} \
               cmake .. -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DDEQP_TARGET=surfaceless \
