@@ -78,12 +78,12 @@ jobs:
               cp -r external/vulkancts/modules/vulkan/deqp-vksc /work/${{ matrix.output_dir }}/
               cp -r external/openglcts/modules/glcts /work/${{ matrix.output_dir }}/
 
-              # 6. Copy assets for glcts
+              # 6. Copy assets for glcts and vulkancts
               cp -r external/openglcts/modules/gl_cts /work/${{ matrix.output_dir }}/
               cp -r external/openglcts/modules/gles2 /work/${{ matrix.output_dir }}/
               cp -r external/openglcts/modules/gles3 /work/${{ matrix.output_dir }}/
               cp -r external/openglcts/modules/gles31 /work/${{ matrix.output_dir }}/
-              cp -r external/openglcts/modules/vulkan /work/${{ matrix.output_dir }}/
+              cp -r external/vulkancts/modules/vulkan /work/${{ matrix.output_dir }}/
             "
 
       - name: Fix Permissions, Pack and Compress
